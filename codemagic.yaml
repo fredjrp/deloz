@@ -1,0 +1,36 @@
+workflows:
+  android-workflow:
+    name: Android Workflow
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      groups:
+        - mapbox_tokens # You should create this group in Codemagic UI
+      vars:
+        PACKAGE_NAME: "com.eopeter.fluttermapboxnavigation.mvp"
+      flutter: stable
+    scripts:
+      - name: Set up Mapbox tokens
+        script: |
+          # Inject Mapbox Access Token into XML
+          cat > android/app/src/main/res/values/mapbox_access_token.xml <<EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources xmlns:tools="http://schemas.android.com/tools">
+              <string name="mapbox_access_token" translatable="false" tools:ignore="UnusedResources">$MAPBOX_ACCESS_TOKEN</string>
+          </resources>
+          EOF
+          
+          # Inject Mapbox Downloads Token into gradle.properties
+          echo "MAPBOX_DOWNLOADS_TOKEN=$MAPBOX_DOWNLOADS_TOKEN" >> android/gradle.properties
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+      - name: Build Android APK
+        script: |
+          flutter build apk --release
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
+    publishing:
+      email:
+        recipients:
+          - user@example.com # Replace with your email
