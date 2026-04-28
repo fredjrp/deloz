@@ -1,13 +1,24 @@
 pluginManagement {
     def flutterSdkPath = {
         def properties = new Properties()
-        file("local.properties").withInputStream { properties.load(it) }
+        def localPropertiesFile = file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.withInputStream { properties.load(it) }
+        }
         def flutterSdkPath = properties.getProperty("flutter.sdk")
-        assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
+        if (flutterSdkPath == null) {
+            flutterSdkPath = System.getenv("FLUTTER_ROOT")
+        }
+        if (flutterSdkPath == null) {
+            // Fallback for some environments
+            flutterSdkPath = System.getenv("FLUTTER_HOME")
+        }
         return flutterSdkPath
     }()
 
-    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+    if (flutterSdkPath != null) {
+        includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+    }
 
     repositories {
         google()
@@ -16,16 +27,11 @@ pluginManagement {
     }
 }
 
-plugins {
-    id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
-}
-
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
         mavenCentral()
-        // Mapbox Repository moved here
         maven {
             url 'https://api.mapbox.com/downloads/v2/releases/maven'
             authentication {
